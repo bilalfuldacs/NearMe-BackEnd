@@ -1,11 +1,13 @@
 <?php
 
 namespace App\Http\Controllers\Auth;
-
+use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Auth;
 
+use Illuminate\Support\Facades\Log; 
 class LoginController extends Controller
 {
     /*
@@ -37,4 +39,40 @@ class LoginController extends Controller
     {
         $this->middleware('guest')->except('logout');
     }
+    public function login(Request $request)
+    {
+        Log::info('Incoming Login Request Data:', $request->all());
+    
+        try {
+            // Validate the incoming request data
+            $credentials = $request->validate([
+                'email' => 'required|email',
+                'password' => 'required',
+            ]);
+    
+            if (Auth::attempt($credentials)) {
+                // Authentication was successful
+                $user = Auth::user();
+    
+                // Create a personal access token for the user
+                $token = $user->createToken('Personal Access Token')->accessToken;
+    
+                return response()->json([
+                    'message' => 'Login successful',
+                    'user' => $user,
+                    'access_token' => $token,
+                ]);
+            }
+    
+            // Authentication failed
+            throw new \Exception('Invalid email or password');
+        } catch (\Exception $e) {
+            // Log the exception for debugging
+            Log::error('Error in login method: ' . $e->getMessage());
+    
+            // Return an error response to the client
+            return response()->json(['message' => 'Error logging in'], 401);
+        }
+    }
+    
 }

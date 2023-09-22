@@ -1,14 +1,14 @@
 <?php
 
 namespace App\Http\Controllers\Auth;
-
+use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
 use App\Models\User;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-
+use Illuminate\Support\Facades\Log; 
 class RegisterController extends Controller
 {
     /*
@@ -50,7 +50,8 @@ class RegisterController extends Controller
     protected function validator(array $data)
     {
         return Validator::make($data, [
-            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255'],
+            'contact' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
@@ -62,12 +63,30 @@ class RegisterController extends Controller
      * @param  array  $data
      * @return \App\Models\User
      */
-    protected function create(array $data)
-    {
-        return User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-        ]);
-    }
+    protected function register(Request $request)
+    {Log::info('Incoming Registration Request Data:', $request->all());
+        try {
+            // Log the incoming request data
+           
+    
+            $data = $request->validate([
+                'username' => 'required|string',
+                'email' => 'required|email|unique:users',
+                'password' => 'required|string',
+                'contact' => 'required|string', // Make sure 'contact' is included here
+            ]);
+    
+            $user = User::create($data);
+    
+            // Assuming you want to return a response to the client
+            return response()->json(['message' => 'User registered successfully', 'user' => $user]);
+        } catch (\Exception $e) {
+            // Log the exception for debugging
+            Log::error('Error in register method: ' . $e->getMessage());
+    
+            // Return an error response to the client
+            return response()->json(['message' => 'Error registering user'], 500);
+        }
+       }    
+   
 }
