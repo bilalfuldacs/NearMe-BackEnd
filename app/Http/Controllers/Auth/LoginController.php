@@ -10,69 +10,79 @@ use Auth;
 use Illuminate\Support\Facades\Log; 
 class LoginController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Login Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller handles authenticating users for the application and
-    | redirecting them to your home screen. The controller uses a trait
-    | to conveniently provide its functionality to your applications.
-    |
-    */
-
-    use AuthenticatesUsers;
-
     /**
-     * Where to redirect users after login.
-     *
-     * @var string
-     */
-    protected $redirectTo = RouteServiceProvider::HOME;
-
-    /**
-     * Create a new controller instance.
+     * Create a new AuthController instance.
      *
      * @return void
      */
     public function __construct()
     {
-        $this->middleware('guest')->except('logout');
+        $this->middleware('auth:api', ['except' => ['login']]);
     }
-    public function login(Request $request)
+
+    /**
+     * Get a JWT via given credentials.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function login()
     {
-        Log::info('Incoming Login Request Data:', $request->all());
-    
-        try {
-            // Validate the incoming request data
-            $credentials = $request->validate([
-                'email' => 'required|email',
-                'password' => 'required',
-            ]);
-    
-            if (Auth::attempt($credentials)) {
-                // Authentication was successful
-                $user = Auth::user();
-    
-                // Create a personal access token for the user
-                $token = $user->createToken('Personal Access Token')->accessToken;
-    
-                return response()->json([
-                    'message' => 'Login successful',
-                    'user' => $user,
-                    'access_token' => $token,
-                ]);
-            }
-    
-            // Authentication failed
-            throw new \Exception('Invalid email or password');
-        } catch (\Exception $e) {
-            // Log the exception for debugging
-            Log::error('Error in login method: ' . $e->getMessage());
-    
-            // Return an error response to the client
-            return response()->json(['message' => 'Error logging in'], 401);
+        $credentials = request(['email', 'password']);
+        Log::info('Incoming Registration Request Data:', $credentials);
+        if (! $token = auth()->attempt($credentials)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
+
+        return $this->respondWithToken($token);
     }
-    
+
+    /**
+     * Get the authenticated User.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function me()
+    {
+        return response()->json(auth()->user());
+    }
+
+    /**
+     * Log the user out (Invalidate the token).
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function logout()
+    {
+        auth()->logout();
+
+        return response()->json(['message' => 'Successfully logged out']);
+    }
+
+    /**
+     * Refresh a token.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function refresh()
+    {
+        return $this->respondWithToken(auth()->refresh());
+    }
+
+    /**
+     * Get the token array structure.
+     *
+     * @param  string $token
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected function respondWithToken($token)
+    {
+        return response()->json([
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => auth()->factory()->getTTL() * 60,
+            'user'=>auth()->user()
+        ]);
+    }
 }
+
