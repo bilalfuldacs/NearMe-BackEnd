@@ -21,7 +21,7 @@ return new class extends Migration
             $table->date('ToDate')->nullable();
             $table->string('AgeGroup')->nullable();
             $table->string('Country')->nullable();
-            $table->string('State')->nullable();
+            $table->string('Street')->nullable();
             $table->string('City')->nullable();
             $table->string('Hausnumber')->nullable();
             $table->string('PostalCode')->nullable();

@@ -25,7 +25,7 @@ class EventsController extends Controller
             'ageGroup' => $event['AgeGroup'],
             'country' => $event['Country'],
             'city' => $event['City'],
-            'street' => $event['State'] ?? 'N/A',
+            'street' => $event['Street'] ,
             'postalCode' => $event['PostalCode'],
             'phone' => $event['Phone'],
             'email' => $event['Email'],
@@ -59,10 +59,11 @@ return response()->json(['message' => 'User registered successfully', 'EventData
        
 
         $requestData = $request->all();
-     
+        
         // Transform the data to match the database column names
         $transformedData = [
             'Name' => $requestData['eventName'],
+            'Street' => $requestData['street'],
             'Type' => $requestData['eventType'],
             'Location' => $requestData['eventLocation'],
             'Gender' => $requestData['preferredGender'],
@@ -85,7 +86,7 @@ return response()->json(['message' => 'User registered successfully', 'EventData
 
        $Event= Event::create($transformedData);
        $images = $requestData['images'];
-     Log::info('Incoming Registration Request Data: ' . $Event);
+   
      foreach ($images as $imageData) {
         $originalFilename = $imageData['file']['path']; // Get the original filename
     

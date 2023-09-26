@@ -22,6 +22,7 @@ class Event extends Model
         'Country',
         'City',
         'Hausnumber',
+        'Street',
         'PostalCode',
         'EventDescription',
         'Email',
