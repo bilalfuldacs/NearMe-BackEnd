@@ -12,7 +12,8 @@ class EventsController extends Controller
 {
     //
     public function transformEventData($event)
-    {
+    { 
+    
         return [
             'id' => $event['id'],
             'eventName' => $event['Name'],
@@ -32,6 +33,7 @@ class EventsController extends Controller
             'whatsapp' => $event['Whatsapp'],
             'Hausnumber' => $event['Hausnumber'],
             'eventDescription' => $event['EventDescription'],
+            'user_id'=>$event['user_id'],
             'pictures' =>$event ['images'], 
         ];
     }
@@ -59,7 +61,7 @@ return response()->json(['message' => 'User registered successfully', 'EventData
        
 
         $requestData = $request->all();
-        
+        Log::info('Deleting event with ID:', ['event_id' => $request->all()]);
         // Transform the data to match the database column names
         $transformedData = [
             'Name' => $requestData['eventName'],
@@ -73,7 +75,7 @@ return response()->json(['message' => 'User registered successfully', 'EventData
             'AgeGroup' => $requestData['ageGroup'],
             'Country' => $requestData['country'],
             'City' => $requestData['city'],
-            'Hausnumber' => $requestData['hausnummer'],
+            'Hausnumber' => $requestData['Hausnumber'],
             'PostalCode' => $requestData['postalCode'],
             'EventDescription' => $requestData['eventDescription'],
             'Email' => $requestData['email'],
@@ -85,7 +87,7 @@ return response()->json(['message' => 'User registered successfully', 'EventData
         // Insert the transformed data into the database
 
        $Event= Event::create($transformedData);
-       $images = $requestData['images'];
+       $images = $requestData['pictures'];
    
      foreach ($images as $imageData) {
         $originalFilename = $imageData['file']['path']; // Get the original filename
@@ -107,4 +109,92 @@ return response()->json(['message' => 'User registered successfully', 'EventData
     }
     
     }
+
+    public function deleteEvent($id)
+{
+    try {
+        // Find the event by ID
+        $event = Event::findOrFail($id);
+        Log::info('Deleting event with ID:', ['event_id' => $event->user_id]);
+        Log::info('Deleting event with ID:', ['event_id' => $event]);
+        // Check if the authenticated user is the owner of the event
+        if (auth()->user()->id !== $event->user_id) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        Log::info('Deleting event with ID:', ['event_id' => $event]);
+        // Delete associated images
+        EventImages::where('event_id', $event->id)->delete();
+
+        // Delete the event
+        $event->delete();
+        Log::info('Deleting event with ID:', ['event_id' => $id]);
+        return response()->json(['message' => 'Event deleted successfully']);
+    } catch (\Exception $e) {
+        // Handle exceptions, log errors, etc.
+        return response()->json(['error' => 'Error deleting event'], 500);
+    }
 }
+
+
+    public function update(Request $request, $id)
+    {
+        // Find the existing event by ID
+        $event = Event::findOrFail($id);
+        Log::info('Deleting event with ID:', ['event_id' => $event]);
+        $requestData = $request->all();
+
+        // Transform the data to match the database column names
+        $transformedData = [
+            'Name' => $requestData['eventName'],
+            'Street' => $requestData['street'],
+            'Type' => $requestData['eventType'],
+            'Location' => $requestData['eventLocation'],
+            'Gender' => $requestData['preferredGender'],
+            'TotalPeople' => $requestData['totalPeople'],
+            'FromDate' => $requestData['fromDate'],
+            'ToDate' => $requestData['toDate'],
+            'AgeGroup' => $requestData['ageGroup'],
+            'Country' => $requestData['country'],
+            'City' => $requestData['city'],
+            'Hausnumber' => $requestData['Hausnumber'],
+            'PostalCode' => $requestData['postalCode'],
+            'EventDescription' => $requestData['eventDescription'],
+            'Email' => $requestData['email'],
+            'Phone' => $requestData['phone'],
+            'Whatsapp' => $requestData['whatsapp'],
+            'user_id' => auth()->user()->id, // You might need to adjust this based on your authentication
+        ];
+
+        // Update the event with the transformed data
+        $event->update($transformedData);
+
+        // Handle images separately for update
+        $images = $requestData['pictures'];
+
+        foreach ($images as $imageData) {
+            $originalFilename = $imageData['file']['path']; // Get the original filename
+
+            // Generate a unique filename using the original filename, timestamp, and a unique identifier
+            $uniqueFilename = time() . '_' . uniqid() . '_' . $originalFilename;
+
+            // Construct the full file path including the 'public/images' directory
+            $fullFilePath = 'public/images/' . $uniqueFilename;
+
+            // Store the image using the constructed file path
+            $imagePath = Storage::put($fullFilePath, $uniqueFilename);
+            $binary64Image = $imageData['base64'];
+
+            // Create an EventImage record and associate it with the event
+            EventImages::create([
+                'event_id' => $event->id, // Associate with the event
+                'image_path' => $binary64Image, // Store the image path
+            ]);
+        }
+
+        return response()->json(['message' => 'Event updated successfully', 'data' => $event]);
+    }
+
+    // ... other methods ...
+}
+
+

@@ -70,7 +70,7 @@ class RegisterController extends Controller
            
     
             $data = $request->validate([
-                'username' => 'required|string',
+                'name' => 'required|string',
                 'email' => 'required|email|unique:users',
                 'password' => 'required|string',
                 'contact' => 'required|string', // Make sure 'contact' is included here

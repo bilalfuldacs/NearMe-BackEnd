@@ -33,8 +33,9 @@ Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/events', [EventsController::class, 'store'])->middleware('auth');
 Route::get('/Myevents', [EventsController::class, 'Myevents'])->middleware('auth');
 Route::get('/Allevents', [EventsController::class, 'AllEvents']);
+Route::delete('/events/{id}', [EventsController::class, 'deleteEvent'])->middleware('auth');
+Route::put('/events/{id}', [EventsController::class, 'update'])->middleware('auth'); // New route for updating an event
 
 
 
-// Resourceful route for events
 
